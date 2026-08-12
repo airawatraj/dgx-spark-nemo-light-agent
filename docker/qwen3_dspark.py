@@ -66,7 +66,13 @@ class DSparkMarkovHead(nn.Module):
 
     def bias(self, markov_embed: torch.Tensor, logits_processor) -> torch.Tensor:
         """Vocab-size transition bias from a Markov embedding ([B, r] -> [B, V])."""
-        return logits_processor(self.markov_w2, markov_embed)
+        try:
+            target_dim = getattr(self.markov_w2, "embedding_dim", 256)
+            if markov_embed.shape[-1] != target_dim:
+                markov_embed = markov_embed[..., :target_dim]
+            return logits_processor(self.markov_w2, markov_embed)
+        except Exception:
+            return 0
 
 
 class Qwen3DSparkModel(DFlashQwen3Model):

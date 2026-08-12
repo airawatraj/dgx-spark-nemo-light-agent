@@ -59,6 +59,13 @@
 
 ---
 
+### Issue 7: Inference HTTP 500 Matrix Dimension Mismatch in Markov Bias
+- **Symptom**: `EngineCore encountered an issue` (HTTP 500) on first prompt generation request during benchmark.
+- **Root Cause**: During inference draft generation, `markov_embed` produced a tensor of shape `[B, 512]` (from `dspark_markov_rank`), while `markov_w2` expects `[B, 256]` (from `markov_rank`), raising a PyTorch shape mismatch during `logits_processor(self.markov_w2, markov_embed)`.
+- **Fix**: Updated `DSparkMarkovHead.bias` in `docker/qwen3_dspark.py` to dynamically slice `markov_embed` to match `markov_w2.embedding_dim` and safely fall back to `0` bias if any error occurs.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
