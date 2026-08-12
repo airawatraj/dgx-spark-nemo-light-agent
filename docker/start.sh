@@ -57,6 +57,7 @@ docker run -d --name "$CONTAINER_NAME" \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -v "$HOME/.cache/triton:/root/.cache/triton" \
   -v "$HOME/.cache/vllm:/root/.cache/vllm" \
+  -v "$SCRIPT_DIR/qwen3_dspark.py:/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen3_dspark.py" \
   "${HF_ENV[@]}" \
   -e TRITON_CACHE_DIR=/root/.cache/triton \
   -e VLLM_USE_V2_MODEL_RUNNER=0 \
