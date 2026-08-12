@@ -80,6 +80,13 @@
 
 ---
 
+### Issue 10: Inference Keyword Argument Mismatch (`hidden_states` vs `target_hidden_states`)
+- **Symptom**: `EngineCore encountered an issue` (HTTP 500) during prompt generation requests.
+- **Root Cause**: During inference draft generation, `llm_base_proposer.py` passes `hidden_states=target_hidden_states` as a keyword argument named `"hidden_states"`. However, `DFlashQwen3ForCausalLM.forward` expects that parameter to be named `"target_hidden_states"`. When `"hidden_states"` was popped, DFlash received `target_hidden_states=None` and failed during draft generation.
+- **Fix**: Updated `Qwen3DSparkForCausalLM.forward` in `docker/qwen3_dspark.py` to pop `"hidden_states"` from `kwargs` and assign it to `kwargs["target_hidden_states"]` if not already present.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
