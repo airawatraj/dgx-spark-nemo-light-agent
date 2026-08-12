@@ -70,6 +70,7 @@ docker run -d --name "$CONTAINER_NAME" \
     --moe-backend marlin \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
+    --max-num-batched-tokens 8192 \
     --enable-prefix-caching \
     --speculative_config.method dspark \
     --speculative_config.model "$SPECULATIVE_MODEL_ID" \

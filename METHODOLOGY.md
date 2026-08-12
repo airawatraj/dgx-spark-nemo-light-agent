@@ -52,6 +52,13 @@
 
 ---
 
+### Issue 6: Mamba Cache Align Block Size Assertion Failure
+- **Symptom**: `AssertionError: In Mamba cache align mode, block_size (4240) must be <= max_num_batched_tokens (2048).`
+- **Root Cause**: For hybrid Mamba/Transformer architectures like Nemotron-3.5 in `--mamba-cache-mode align`, vLLM computes a block size of 4240 to align KV pages with Mamba pages. Default `max_num_batched_tokens` was 2048, breaking the `block_size <= max_num_batched_tokens` constraint.
+- **Fix**: Added `--max-num-batched-tokens 8192` to `vllm serve` invocation flags in `docker/start.sh`.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
