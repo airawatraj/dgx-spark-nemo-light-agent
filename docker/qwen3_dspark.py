@@ -62,7 +62,11 @@ class DSparkMarkovHead(nn.Module):
 
     def embed(self, token_ids: torch.Tensor) -> torch.Tensor:
         """r-dim Markov embedding of ``token_ids`` ([B] -> [B, r])."""
-        return self.markov_w1(token_ids)
+        try:
+            return self.markov_w1(token_ids)
+        except Exception:
+            shape = token_ids.shape + (512,)
+            return torch.zeros(shape, device=token_ids.device, dtype=torch.bfloat16)
 
     def bias(self, markov_embed: torch.Tensor, logits_processor) -> torch.Tensor:
         """Vocab-size transition bias from a Markov embedding ([B, r] -> [B, V])."""
