@@ -149,6 +149,8 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
         )
 
     def forward(self, *args, hidden_states=None, **kwargs):
+        if hidden_states is not None:
+            kwargs["hidden_states"] = hidden_states
         return super().forward(*args, **kwargs)
 
     def get_draft_kv_cache_layer_names(self) -> list[str]:
