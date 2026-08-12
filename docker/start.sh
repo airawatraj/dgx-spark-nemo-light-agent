@@ -41,6 +41,9 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
 fi
 
+echo "Cleaning stale torch compile cache..."
+rm -rf "$HOME/.cache/vllm/torch_compile_cache"
+
 mkdir -p "$HOME/.cache/huggingface" "$HOME/.cache/triton" "$HOME/.cache/vllm"
 
 HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"

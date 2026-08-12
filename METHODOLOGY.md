@@ -73,6 +73,13 @@
 
 ---
 
+### Issue 9: cuBLAS Internal Error during CUDA Graph Capture from Stale Torch Compile Cache
+- **Symptom**: `RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling cublasGemmEx` during CUDA graph capture at ~31% progress.
+- **Root Cause**: `vllm::torch.compile` cached AOT compiled Inductor graphs (`/root/.cache/vllm/torch_compile_cache`) from earlier runs with different memory/batch parameters (`gpu_memory_utilization=0.90`, `max_num_batched_tokens=2048`). Loading those stale compiled graphs into the new CUDA graph stream with `max_num_batched_tokens=8192` caused cuBLAS GEMM stride/shape mismatches.
+- **Fix**: Added `rm -rf "$HOME/.cache/vllm/torch_compile_cache"` in `docker/start.sh` to purge stale compiled graphs on startup and force clean, matching Inductor graph compilation.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
