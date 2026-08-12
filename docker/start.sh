@@ -55,13 +55,13 @@ for config_path in glob.glob(os.path.join(spec_cache, '**/config.json'), recursi
         with open(config_path, 'r') as f:
             cfg = json.load(f)
         updated = False
-        if cfg.get('markov_rank') != 512:
-            print(f"Setting markov_rank from {cfg.get('markov_rank')} to 512 in {config_path}")
-            cfg['markov_rank'] = 512
+        if cfg.get('markov_rank') != 256:
+            print(f"Setting markov_rank from {cfg.get('markov_rank')} to 256 in {config_path}")
+            cfg['markov_rank'] = 256
             updated = True
-        if cfg.get('dspark_markov_rank') != 256:
-            print(f"Setting dspark_markov_rank from {cfg.get('dspark_markov_rank')} to 256 in {config_path}")
-            cfg['dspark_markov_rank'] = 256
+        if cfg.get('dspark_markov_rank') != 512:
+            print(f"Setting dspark_markov_rank from {cfg.get('dspark_markov_rank')} to 512 in {config_path}")
+            cfg['dspark_markov_rank'] = 512
             updated = True
         if updated:
             with open(config_path, 'w') as f:
