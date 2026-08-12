@@ -41,9 +41,6 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
 fi
 
-echo "Cleaning stale torch compile cache..."
-rm -rf "$HOME/.cache/vllm/torch_compile_cache"
-
 mkdir -p "$HOME/.cache/huggingface" "$HOME/.cache/triton" "$HOME/.cache/vllm"
 
 HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
@@ -73,7 +70,8 @@ docker run -d --name "$CONTAINER_NAME" \
     --moe-backend marlin \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
-    --max-num-batched-tokens 8192 \
+    --max-num-batched-tokens 4240 \
+    --enforce-eager \
     --enable-prefix-caching \
     --speculative_config.method dspark \
     --speculative_config.model "$SPECULATIVE_MODEL_ID" \
