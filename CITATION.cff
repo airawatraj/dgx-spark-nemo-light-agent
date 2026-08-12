@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: "Running Nemotron-3.5-Lightning-30B on DGX Spark for Local Agentic Workloads"
+message: "If you use this setup, methodology, or benchmark wrapper, please cite it as below."
+type: software
+authors:
+  - family-names: "Rawat"
+    given-names: "Rajendra Singh"
+    affiliation: "cogni.chat"
+    orcid: "https://orcid.org/0009-0007-5017-1341"
+repository-code: "https://github.com/airawatraj/dgx-spark-nemo-light-agent"
+abstract: >-
+  A technical implementation and benchmarking suite for running NVIDIA-Nemotron-3.5-Lightning-30B
+  on a personal NVIDIA DGX Spark with up to 1M context. This repository documents the
+  methodology for achieving optimized local serving via vLLM using NVFP4 quantization,
+  DSpark speculative decoding, and tool choice parsing capability.
+keywords:
+  - "Nemotron 3.5 Lightning"
+  - "DGX Spark"
+  - "vLLM"
+  - "AI Agents"
+  - "NVFP4"
+  - "Speculative Decoding"
+  - "Performance Benchmarking"
+license: MIT
+version: 1.0.0
+date-released: "2026-08-12"

@@ -1,0 +1,22 @@
+# Python caching and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# System & IDE files
+.DS_Store
+.idea/
+.vscode/
+
+# Local model weight caches or logs
+.nim-cache/
+nim-cache/
+*.log
+
+# Benchmark outputs
+*.csv
+benchmark/results_full.csv
+
