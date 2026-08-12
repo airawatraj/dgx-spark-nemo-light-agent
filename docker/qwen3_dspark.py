@@ -47,12 +47,13 @@ class DSparkMarkovHead(nn.Module):
         vocab_size: int,
         draft_vocab_size: int,
         markov_rank: int,
+        dspark_markov_rank: int,
         prefix: str,
     ) -> None:
         super().__init__()
         # TODO(ben): profile for which (if any) it makes sense to replicate or TP-shard
         self.markov_w1 = VocabParallelEmbedding(
-            vocab_size, markov_rank, prefix=maybe_prefix(prefix, "markov_w1")
+            vocab_size, dspark_markov_rank, prefix=maybe_prefix(prefix, "markov_w1")
         )
         self.markov_w2 = ParallelLMHead(
             draft_vocab_size, markov_rank, prefix=maybe_prefix(prefix, "markov_w2")
@@ -84,10 +85,17 @@ class Qwen3DSparkModel(DFlashQwen3Model):
         draft_vocab_size = (
             getattr(config, "draft_vocab_size", None) or config.vocab_size
         )
+        markov_rank = getattr(config, "markov_rank", 256)
+        dspark_markov_rank = getattr(config, "dspark_markov_rank", 512)
+        if markov_rank == 512 and dspark_markov_rank == 512:
+            # Automatically override markov_rank to 256 to match physical Nemotron 3.5 Lightning DSpark heads
+            markov_rank = 256
+
         self.markov_head = DSparkMarkovHead(
             config.vocab_size,
             draft_vocab_size,
-            config.markov_rank,
+            markov_rank,
+            dspark_markov_rank,
             prefix=maybe_prefix(prefix, "markov_head"),
         )
 
