@@ -3,11 +3,11 @@
 ## Architecture & Deployment Setup
 - **Main Model**: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` (30B NVFP4 quantized hybrid Mamba/Transformer)
 - **Speculative Draft Model**: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark` (DFlash backbone + DSpark Markov head)
-- **Serving Engine**: vLLM `v0.26.0` (`vllm/vllm-openai:latest`) running inside Docker on NVIDIA DGX Spark (`rawatlabs` single-GPU Grace-Blackwell host with 128GB UMA).
+- **Serving Engine**: vLLM `v0.26.0` (`vllm/vllm-openai:latest`) running inside Docker on NVIDIA DGX Spark (`rawatlabs` single-GPU Grace-Blackwell host with 128GB UMA). *(Upgraded to `v0.27.1` — see note at end.)*
 - **Deployment Strategy**: 
   - Code edits and git commits originate on local MBP workspace.
   - Pushed to GitHub and pulled on DGX Spark host.
-  - `docker/start.sh` mounts custom model runner files (e.g. `docker/qwen3_dspark.py`) directly over the container's vLLM package directory (`/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen3_dspark.py`).
+  - `docker/start.sh` previously mounted custom model runner files (e.g. `docker/qwen3_dspark.py`) directly over the container's vLLM package directory. This patch is no longer required from vLLM `v0.27.1` onward.
 
 ---
 
@@ -114,3 +114,16 @@
    ```bash
    curl -sf http://localhost:8000/health && echo OK
    ```
+
+---
+
+## Upgrade Note: vLLM v0.26.0 → v0.27.1
+
+- **Tagged** the last known-working `v0.26.0` state as git tag `v0.26.0-working-dspark` before upgrading.
+- **vLLM `v0.27.1`** (`vllm/vllm-openai:v0.27.1`) is expected to have native DSpark support, eliminating the need for the volume-mounted `docker/qwen3_dspark.py` patch that resolved Issues 1–12 above.
+- **`--enforce-eager` removed** — CUDA graph capture is re-enabled on `v0.27.1`, which should improve decode throughput meaningfully (observed ~125 t/s on arena leaderboard from another user running the stock image).
+- **Rollback**: If `v0.27.1` surfaces new issues, revert with:
+  ```bash
+  git checkout v0.26.0-working-dspark
+  bash docker/start.sh
+  ```
