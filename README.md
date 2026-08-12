@@ -141,6 +141,43 @@ uv run benchmark/benchmark_speed_arena.py \
 > This sweep tests concurrency 1, 2, 5, 10 at depth points up to 1M tokens: `0`, `4096`, `8192`, `16384`, `32768`, `65535`, `131072`, `262144`, `524288`, `1048576`.
 > Plan for several hours; run overnight.
 
+**August 2026 Results (partial — interrupted at depth 8192 `pp2048` tests due to no GPU activity):**
+
+> **Note:** `ctx_*` tests load the context as a long system prompt before running the benchmark. `pp2048` tests inject all tokens as a prompt prefix. The `pp2048 @ d8192+` tests failed silently (no GPU activity) — the `max_num_batched_tokens=4240` limit was likely too low to prefill a 2048-token prompt on top of an 8192-token context in a single pass.
+
+| test | t/s (total) | t/s (req) | peak t/s | TTFT (ms) |
+|:-----|------------:|----------:|---------:|----------:|
+| pp2048 (c1) | 5039.63 | 5039.63 | — | 408.82 |
+| tg128 (c1) | 35.46 | 35.46 | 37.67 | — |
+| pp2048 (c2) | 5211.04 | 3453.74 | — | 632.66 |
+| tg128 (c2) | 53.12 | 27.55 | 59.33 | — |
+| pp2048 (c5) | 5206.39 | 1709.60 | — | 1487.54 |
+| tg128 (c5) | 81.28 | 18.70 | 110.00 | — |
+| pp2048 (c10) | 5526.05 | 1130.23 | — | 2467.28 |
+| tg128 (c10) | 103.66 | 12.61 | 162.67 | — |
+| ctx_pp @ d4096 (c1) | 4982.99 | 4982.99 | — | 824.65 |
+| ctx_tg @ d4096 (c1) | 36.10 | 36.10 | 38.00 | — |
+| ctx_pp @ d4096 (c2) | 5341.48 | 2815.00 | — | 1461.46 |
+| ctx_tg @ d4096 (c2) | 55.56 | 28.34 | 59.67 | — |
+| ctx_pp @ d4096 (c5) | 5504.40 | 1644.58 | — | 2757.71 |
+| ctx_tg @ d4096 (c5) | 72.03 | 17.89 | 109.67 | — |
+| ctx_pp @ d4096 (c10) | 5381.12 | 1139.30 | — | 4563.76 |
+| ctx_tg @ d4096 (c10) | 81.54 | 11.02 | 154.33 | — |
+| ctx_pp @ d8192 (c1) | 5321.35 | 5321.35 | — | 1542.09 |
+| ctx_tg @ d8192 (c1) | 35.51 | 35.51 | 37.33 | — |
+| ctx_pp @ d8192 (c2) | 5461.04 | 3216.81 | — | 2608.41 |
+| ctx_tg @ d8192 (c2) | 48.09 | 26.27 | 59.67 | — |
+| ctx_pp @ d8192 (c5) | 5426.69 | 2017.86 | — | 4882.69 |
+| ctx_tg @ d8192 (c5) | 49.52 | 14.71 | 106.33 | — |
+
+**Key highlights:**
+- **Prefill throughput:** ~5,000–5,500 t/s total at all concurrency levels (excellent prefill parallelism)
+- **Peak generation (c10):** 162.67 t/s total — scales well under load
+- **Single session generation:** ~35–36 t/s (consistent with DSpark speculative decoding budget)
+- **TTFT at d8192 (c1):** 1,542 ms — expected for an 8K context load
+
+
+
 ---
 
 ### 6. Stop the Server
