@@ -42,23 +42,31 @@ fi
 mkdir -p "$HOME/.cache/huggingface" "$HOME/.cache/triton" "$HOME/.cache/vllm"
 
 # ── Patch DSpark model config if needed ─────────────────────────────────────────
-SPEC_CACHE="$HOME/.cache/huggingface/hub/models--nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark"
+HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
+SPEC_CACHE="$HF_HOME/hub/models--nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark"
+
 if [ -d "$SPEC_CACHE" ]; then
   echo "Checking DSpark model configs for rank mismatches..."
-  find "$SPEC_CACHE" -name "config.json" -type f | while read -r config_file; do
-    if grep -q '"markov_rank": 512' "$config_file" || grep -q '"dspark_markov_rank": 512' "$config_file"; then
-      echo "Patching $config_file: setting markov_rank to 256..."
-      python3 -c "
-import json
-with open('$config_file', 'r') as f:
-    cfg = json.load(f)
-cfg['markov_rank'] = 256
-cfg['dspark_markov_rank'] = 256
-with open('$config_file', 'w') as f:
-    json.dump(cfg, f, indent=2)
+  python3 -c "
+import glob, json, os
+spec_cache = os.path.expanduser('$SPEC_CACHE')
+for config_path in glob.glob(os.path.join(spec_cache, '**/config.json'), recursive=True):
+    try:
+        with open(config_path, 'r') as f:
+            cfg = json.load(f)
+        updated = False
+        for key in ['markov_rank', 'dspark_markov_rank']:
+            if cfg.get(key) != 256:
+                print(f'Setting {key} from {cfg.get(key)} to 256 in {config_path}')
+                cfg[key] = 256
+                updated = True
+        if updated:
+            with open(config_path, 'w') as f:
+                json.dump(cfg, f, indent=2)
+            print(f'Successfully patched {config_path}')
+    except Exception as e:
+        print(f'Error patching {config_path}: {e}')
 "
-    fi
-  done
 fi
 
 echo "Starting vLLM container..."
@@ -70,12 +78,13 @@ docker run -d --name "$CONTAINER_NAME" \
   --shm-size=32gb \
   --ulimit memlock=-1 \
   --ulimit stack=67108864 \
-  -v "$HOME/.cache/huggingface:/root/.cache/huggingface" \
+  -v "$HF_HOME:/root/.cache/huggingface" \
   -v "$HOME/.cache/triton:/root/.cache/triton" \
   -v "$HOME/.cache/vllm:/root/.cache/vllm" \
   "${HF_ENV[@]}" \
   -e TRITON_CACHE_DIR=/root/.cache/triton \
   -e VLLM_USE_V2_MODEL_RUNNER=0 \
+  -e HF_HUB_OFFLINE=1 \
   "$VLLM_IMAGE" \
     --model "$MODEL_ID" \
     --served-model-name "$SERVED_MODEL_NAME" \
