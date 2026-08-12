@@ -55,6 +55,7 @@ docker run -d --name "$CONTAINER_NAME" \
   -v "$HOME/.cache/vllm:/root/.cache/vllm" \
   "${HF_ENV[@]}" \
   -e TRITON_CACHE_DIR=/root/.cache/triton \
+  -e VLLM_USE_V2_MODEL_RUNNER=0 \
   "$VLLM_IMAGE" \
     --model "$MODEL_ID" \
     --served-model-name "$SERVED_MODEL_NAME" \
