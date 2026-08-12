@@ -47,8 +47,8 @@
 
 ### Issue 5: Unexpected Keyword Argument `hidden_states` during Proposer Dummy Run
 - **Symptom**: `TypeError: DFlashQwen3ForCausalLM.forward() got an unexpected keyword argument 'hidden_states'` during memory profiling/warmup.
-- **Root Cause**: During speculative decoding memory profiling, vLLM's `llm_base_proposer.py` calls `self.model(**kwargs)` passing `hidden_states` as a keyword argument. The inherited `DFlashQwen3ForCausalLM.forward` method signature did not accept `hidden_states=None` or `**kwargs`.
-- **Fix**: Overrode `forward(self, *args, hidden_states=None, **kwargs)` in `Qwen3DSparkForCausalLM` to pass kwargs cleanly to `super().forward(...)`.
+- **Root Cause**: During speculative decoding memory profiling, vLLM's `llm_base_proposer.py` calls `self.model(**kwargs)` passing `hidden_states` as a keyword argument. The inherited `DFlashQwen3ForCausalLM.forward` method signature does not accept `hidden_states`.
+- **Fix**: Overrode `forward(self, *args, **kwargs)` in `Qwen3DSparkForCausalLM` to `kwargs.pop("hidden_states", None)` before invoking `super().forward(*args, **kwargs)`.
 
 ---
 
