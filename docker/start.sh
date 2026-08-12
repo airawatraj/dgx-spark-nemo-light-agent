@@ -47,9 +47,9 @@ SPEC_CACHE="$HF_HOME/hub/models--nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-N
 
 if [ -d "$SPEC_CACHE" ]; then
   echo "Checking DSpark model configs for rank mismatches..."
-  python3 -c "
+  SPEC_CACHE="$SPEC_CACHE" python3 << 'EOF'
 import glob, json, os
-spec_cache = os.path.expanduser('$SPEC_CACHE')
+spec_cache = os.environ.get('SPEC_CACHE', '')
 for config_path in glob.glob(os.path.join(spec_cache, '**/config.json'), recursive=True):
     try:
         with open(config_path, 'r') as f:
@@ -66,10 +66,10 @@ for config_path in glob.glob(os.path.join(spec_cache, '**/config.json'), recursi
         if updated:
             with open(config_path, 'w') as f:
                 json.dump(cfg, f, indent=2)
-            print(f'Successfully patched {config_path}')
+            print(f"Successfully patched {config_path}")
     except Exception as e:
-        print(f'Error patching {config_path}: {e}')
-"
+        print(f"Error patching {config_path}: {e}")
+EOF
 fi
 
 echo "Starting vLLM container..."
