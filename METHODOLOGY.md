@@ -66,6 +66,13 @@
 
 ---
 
+### Issue 8: UMA Host RAM Saturation (125.8 GB / 128 GB) Stalling Triton JIT Compilation
+- **Symptom**: Server hangs indefinitely at `Warming up ll_bf16 router GEMM kernels.` with GPU utilization at 0% and System Memory at 125.80 GB / 128 GB in DGX Dashboard.
+- **Root Cause**: On Grace-Blackwell Unified Memory Architecture (UMA), GPU memory and CPU RAM share the 128 GB pool. Setting `--gpu-memory-utilization 0.90` reserved 109.5 GB for KV cache + weights, leaving under ~2 GB RAM for the Linux OS, Docker daemon, and PyTorch Triton JIT compiler sub-processes, causing compiler CPU allocation thrashing and hanging.
+- **Fix**: Adjusted `GPU_MEMORY_UTILIZATION` default to `0.80` in `docker/start.sh`, releasing ~24 GB of unreserved RAM for host CPU compiler operations while maintaining 23+ million FP8 KV cache tokens.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
