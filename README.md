@@ -43,10 +43,13 @@ bash setup/install.sh
 # 3. Download model weights (one-time)
 bash setup/download_model.sh
 
-# 4. Start vLLM container with NVFP4 + DSpark
+# 4. Preflight check — validates GPU, swap, memory, Docker image, flag compat
+bash setup/preflight.sh
+
+# 5. Start vLLM container with NVFP4 + DSpark
 bash docker/start.sh
 
-# 5. Check container status & logs
+# 6. Check container status & logs
 bash docker/status.sh
 ```
 
