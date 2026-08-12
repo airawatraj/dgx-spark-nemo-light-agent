@@ -94,6 +94,13 @@
 
 ---
 
+### Issue 12: Shape Unpacking Mismatch in Dummy Run vs Generation
+- **Symptom**: `ValueError: too many values to unpack (expected 2)` in `llm_base_proposer.py` during draft generation.
+- **Root Cause**: vLLM 0.26.0's `llm_base_proposer.py` expects the draft model's `forward` to return exactly two items: `(last_hidden_states, hidden_states)`. However, `DFlashQwen3ForCausalLM.forward` returns a single tensor of shape `(num_tokens, hidden_size)`. During profiling (`dummy_run()`), `num_tokens` was coincidentally 2, so Python's tuple unpacking `a, b = tensor_of_shape_2_x_H` succeeded by unbinding the tensor. During generation, `num_tokens` is 3 (`num_speculative_tokens: 3`), causing unpacking to fail on shape `(3, H)`.
+- **Fix**: Updated `Qwen3DSparkForCausalLM.forward` to intercept the returned single tensor from `super().forward()` and explicitly bundle it with `target_hidden_states` (passed via `kwargs`) into a real 2-element tuple: `(target_hidden_states, out)`, cleanly satisfying the proposer's unpacking expectations without relying on tensor dimension unbinding.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
