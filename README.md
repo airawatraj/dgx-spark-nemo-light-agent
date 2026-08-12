@@ -78,6 +78,8 @@ uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.c
 
 ### Speed Benchmark (custom script)
 
+![Speed Benchmark Results](assets/benchmark_speed_august2026.png)
+
 ```bash
 # Full run (TPS, TTFT, concurrent sessions, context window)
 uv run benchmark/benchmark_speed.py
@@ -93,6 +95,9 @@ uv run benchmark/benchmark_speed.py --host localhost --port 8000 --model Cogni-B
 > Tests: baseline TPS, TPS vs output length, concurrent sessions (1–4), context window (up to 1M, the server's `--max-model-len`), health & KV stats.
 
 ### Smarts Benchmark (tool-eval-bench)
+
+![Smarts Benchmark Results 1](assets/benchmark_smarts_august2026_1.png)
+![Smarts Benchmark Results 2](assets/benchmark_smarts_august2026_2.png)
 
 ```bash
 # Quick smoke test (recommended first run)
