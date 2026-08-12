@@ -45,6 +45,13 @@
 
 ---
 
+### Issue 5: Unexpected Keyword Argument `hidden_states` during Proposer Dummy Run
+- **Symptom**: `TypeError: DFlashQwen3ForCausalLM.forward() got an unexpected keyword argument 'hidden_states'` during memory profiling/warmup.
+- **Root Cause**: During speculative decoding memory profiling, vLLM's `llm_base_proposer.py` calls `self.model(**kwargs)` passing `hidden_states` as a keyword argument. The inherited `DFlashQwen3ForCausalLM.forward` method signature did not accept `hidden_states=None` or `**kwargs`.
+- **Fix**: Overrode `forward(self, *args, hidden_states=None, **kwargs)` in `Qwen3DSparkForCausalLM` to pass kwargs cleanly to `super().forward(...)`.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
