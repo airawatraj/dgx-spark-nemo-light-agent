@@ -1,51 +1,56 @@
-# DGX Spark - Nemotron 3.5 Lightning Serving & Benchmarking
+# Running Cogni-Brain on DGX Spark · Nemotron-3.5-Lightning-30B-A3B-NVFP4 + DSpark
 
-This repository contains the minimal code structure and scripts to serve and benchmark the **NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4** model (using speculative decoding with **NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark**) on a DGX Spark.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)
+![Base Model](https://img.shields.io/badge/base%20model-Nemotron--3.5--Lightning--30B--A3B--NVFP4-cyan)
+![Speculative](https://img.shields.io/badge/speculative-DSpark--NVFP4%20(3%20tokens)-purple)
+![Runtime](https://img.shields.io/badge/runtime-vLLM%20%2F%20vllm--openai-orange)
+![Hardware](https://img.shields.io/badge/hardware-NVIDIA%20DGX%20Spark-brightgreen?logo=nvidia&logoColor=white)
+![Context](https://img.shields.io/badge/context-1M-blue)
+![Tool Calling](https://img.shields.io/badge/tool--calling-qwen3__coder-green)
+![Reasoning](https://img.shields.io/badge/reasoning-nemotron__v3-black)
+![Quantization](https://img.shields.io/badge/quantization-NVFP4-purple)
 
-The model is served under the name `Cogni-Brain` inside a Docker container named `spark-brain`.
+This repo documents my inference tuning experiments of [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) with DSpark speculative decoding on a single DGX Spark.
+
+> ⚠️ **Personal workstation setup. Not for enterprise use. Use at your own risk.**
+
+---
+
+## What is Nemotron 3.5 Lightning?
+
+[NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) is NVIDIA's 30B parameter dense model, served here as **Cogni-Brain** — a model alias that stays consistent across agent frameworks (Claude Code, Continue, Open WebUI, etc.) regardless of which model is running underneath.
+
+Key characteristics:
+- **NVFP4** — Leverages native FP4 Tensor Cores on the DGX Spark
+- **DSpark Speculative Decoding** — `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark` generates **3 draft tokens per step** (num_speculative_tokens: 3) for significant TPS gains
+- **nemotron_v3** reasoning parser and **qwen3_coder** tool-call parser
+- **1M token context window** (`--max-model-len 1048576`)
+- Native `--enable-auto-tool-choice` support
+
+---
 
 ## Quick Start
 
-### 1. Environment Setup
-
-Run the installation script to disable OS swap, verify Docker, and install the `uv` tool (used for managing python environments and running scripts):
+> ⚠️ **Warning:** `setup/install.sh` disables system swap permanently to prevent unified-memory thrashing. This is a system-level change that survives reboots.
 
 ```bash
+# 1. Set your Hugging Face token (model may be gated)
+export HF_TOKEN="your_hf_token_here"
+
+# 2. System prerequisites (swap disable, uv install, docker check)
 bash setup/install.sh
-```
 
-### 2. Download Model Weights
-
-Download the main model weights and the speculative DSpark weights from the Hugging Face hub. If you are downloading a gated model or need authentication, export your Hugging Face token first:
-
-```bash
-export HF_TOKEN="your_huggingface_api_token"
+# 3. Download model weights (one-time)
 bash setup/download_model.sh
-```
 
-By default, weights are cached at `$HOME/.cache/huggingface`.
-
-### 3. Start the Server
-
-Launch the vLLM container on DGX Spark. This mounts your local Hugging Face cache and runs vLLM with the optimized speculative decoding setup, 1M context configuration, and appropriate reasoning and tool-choice parsers:
-
-```bash
-export HF_TOKEN="your_huggingface_api_token"  # Required if model requires HF auth
+# 4. Start vLLM container with NVFP4 + DSpark
 bash docker/start.sh
-```
 
-To monitor startup progress:
-```bash
-docker logs -f spark-brain
-```
-
-### 4. Check Status
-
-Verify the health, memory usage, and KV cache stats of the container:
-
-```bash
+# 5. Check container status & logs
 bash docker/status.sh
 ```
+
+---
 
 ### 5. Run Performance Benchmarks
 
