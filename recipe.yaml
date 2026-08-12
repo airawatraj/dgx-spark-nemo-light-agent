@@ -1,0 +1,37 @@
+recipe_version: "1"
+name: Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark
+model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
+container: vllm/vllm-openai:latest
+cluster_only: false
+solo_only: true
+defaults:
+  port: 8000
+  host: 0.0.0.0
+  tensor_parallel: 1
+  gpu_memory_utilization: 0.80
+  max_model_len: 131072
+  max_num_seqs: 8
+  max_num_batched_tokens: 4240
+env:
+  CUTE_DSL_ARCH: sm_121a
+  MAX_JOBS: '4'
+command: |
+  vllm serve nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4 \
+    --served-model-name Cogni-Brain \
+    --speculative-config '{"method":"dspark","model":"nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark","num_speculative_tokens":3}' \
+    --moe-backend marlin \
+    --mamba-backend flashinfer \
+    --mamba-cache-mode align \
+    --reasoning-parser nemotron_v3 \
+    --tool-call-parser qwen3_coder \
+    --enable-auto-tool-choice \
+    --enable-prefix-caching \
+    --kv-cache-dtype fp8 \
+    --enforce-eager \
+    --max-num-seqs {max_num_seqs} \
+    --max-num-batched-tokens {max_num_batched_tokens} \
+    --max-model-len {max_model_len} \
+    --gpu-memory-utilization {gpu_memory_utilization} \
+    -tp {tensor_parallel} \
+    --host {host} \
+    --port {port}
