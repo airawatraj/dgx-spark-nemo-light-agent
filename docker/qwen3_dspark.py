@@ -154,7 +154,10 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
 
     def forward(self, *args, **kwargs):
         kwargs.pop("hidden_states", None)
-        return super().forward(*args, **kwargs)
+        out = super().forward(*args, **kwargs)
+        if isinstance(out, tuple) and len(out) > 2:
+            return out[:2]
+        return out
 
     def get_draft_kv_cache_layer_names(self) -> list[str]:
         return [layer.self_attn.attn.layer_name for layer in self.model.layers]
