@@ -187,9 +187,10 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
 
         # mask_embedding is an unused placeholder param; DSpark masks via the vocab row.
         # confidence_head is not wired into inference yet; skip its weights.
+        # markov_head ModelOpt NVFP4 quantized weights skip to avoid tensor packing crashes.
         # embed_tokens / lm_head are optional; when omitted they are shared from
         # the target by load_dspark_model, so skip the unloaded params here.
-        skip_substrs = ["mask_embedding", "confidence_head"]
+        skip_substrs = ["mask_embedding", "confidence_head", "markov_head"]
         if not includes_embed_tokens:
             skip_substrs.append("embed_tokens")
         if not includes_lm_head:
