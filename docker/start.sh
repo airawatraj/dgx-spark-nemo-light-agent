@@ -41,6 +41,26 @@ fi
 
 mkdir -p "$HOME/.cache/huggingface" "$HOME/.cache/triton" "$HOME/.cache/vllm"
 
+# ── Patch DSpark model config if needed ─────────────────────────────────────────
+SPEC_CACHE="$HOME/.cache/huggingface/hub/models--nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark"
+if [ -d "$SPEC_CACHE" ]; then
+  echo "Checking DSpark model configs for rank mismatches..."
+  find "$SPEC_CACHE" -name "config.json" -type f | while read -r config_file; do
+    if grep -q '"markov_rank": 512' "$config_file" || grep -q '"dspark_markov_rank": 512' "$config_file"; then
+      echo "Patching $config_file: setting markov_rank to 256..."
+      python3 -c "
+import json
+with open('$config_file', 'r') as f:
+    cfg = json.load(f)
+cfg['markov_rank'] = 256
+cfg['dspark_markov_rank'] = 256
+with open('$config_file', 'w') as f:
+    json.dump(cfg, f, indent=2)
+"
+    fi
+  done
+fi
+
 echo "Starting vLLM container..."
 docker run -d --name "$CONTAINER_NAME" \
   --gpus all \
