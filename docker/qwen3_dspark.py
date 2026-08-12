@@ -15,6 +15,7 @@ DSparkMarkovHead is shared with the DSV4-style DSpark model.
 """
 
 from collections.abc import Iterable
+import inspect
 
 import torch
 import torch.nn as nn
@@ -153,11 +154,9 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
         )
 
     def forward(self, *args, **kwargs):
-        if "hidden_states" in kwargs:
-            hs = kwargs.pop("hidden_states")
-            if "target_hidden_states" not in kwargs:
-                kwargs["target_hidden_states"] = hs
-        return super().forward(*args, **kwargs)
+        sig = inspect.signature(super().forward)
+        valid_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+        return super().forward(*args, **valid_kwargs)
 
     def get_draft_kv_cache_layer_names(self) -> list[str]:
         return [layer.self_attn.attn.layer_name for layer in self.model.layers]

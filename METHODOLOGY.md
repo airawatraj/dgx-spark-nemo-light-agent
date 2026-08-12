@@ -87,6 +87,13 @@
 
 ---
 
+### Issue 11: Proposer Keyword Argument Filtering in Draft Model Forward Pass
+- **Symptom**: `TypeError: DFlashQwen3ForCausalLM.forward() got an unexpected keyword argument 'target_hidden_states'` during memory profiling `dummy_run()`.
+- **Root Cause**: `llm_base_proposer.py` passes generic speculative decoding keyword arguments into `self.model(**kwargs)` that do not match the exact parameter list of `DFlashQwen3ForCausalLM.forward`.
+- **Fix**: Used Python's `inspect.signature(super().forward)` inside `Qwen3DSparkForCausalLM.forward` to dynamically filter `kwargs` so only valid parameters expected by `super().forward` are forwarded.
+
+---
+
 ## Verification & Deployment Workflow
 1. Make changes to `docker/qwen3_dspark.py` and `docker/start.sh` on local MBP.
 2. Commit and push to GitHub repository `airawatraj/dgx-spark-nemo-light-agent`.
