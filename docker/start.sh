@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 CONTAINER_NAME="${CONTAINER_NAME:-spark-brain}"
-VLLM_IMAGE="${VLLM_IMAGE:-vllm/vllm-openai:latest}"
+VLLM_IMAGE="${VLLM_IMAGE:-vllm/vllm-openai:v0.27.1}"
 MODEL_ID="${MODEL_ID:-nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4}"
 SPECULATIVE_MODEL_ID="${SPECULATIVE_MODEL_ID:-nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Cogni-Brain}"
@@ -57,7 +57,6 @@ docker run -d --name "$CONTAINER_NAME" \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -v "$HOME/.cache/triton:/root/.cache/triton" \
   -v "$HOME/.cache/vllm:/root/.cache/vllm" \
-  -v "$SCRIPT_DIR/qwen3_dspark.py:/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen3_dspark.py" \
   "${HF_ENV[@]}" \
   -e TRITON_CACHE_DIR=/root/.cache/triton \
   -e VLLM_USE_V2_MODEL_RUNNER=0 \
@@ -71,7 +70,6 @@ docker run -d --name "$CONTAINER_NAME" \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
     --max-num-batched-tokens 4240 \
-    --enforce-eager \
     --enable-prefix-caching \
     --speculative_config.method dspark \
     --speculative_config.model "$SPECULATIVE_MODEL_ID" \
