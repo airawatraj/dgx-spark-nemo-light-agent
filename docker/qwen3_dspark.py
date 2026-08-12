@@ -176,6 +176,10 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
                 includes_embed_tokens = True
             if "lm_head" in name:
                 includes_lm_head = True
+            if "markov_head.markov_w2.weight" in name and len(loaded_weight.shape) == 2 and loaded_weight.shape[1] == 256:
+                w_low = loaded_weight[:, 0::2] & 0x0F
+                w_high = loaded_weight[:, 1::2] & 0x0F
+                loaded_weight = (w_low | (w_high << 4)).to(torch.int8)
             model_weights[name] = loaded_weight
             # Sets has_own_embed_tokens / has_own_lm_head so load_dspark_model
             # knows whether to keep these or alias the target's.
