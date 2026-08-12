@@ -137,6 +137,10 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
             )
         else:
             self.draft_id_to_target_id = None
+        self.mask_hidden = nn.Parameter(
+            torch.zeros(self.config.hidden_size),
+            requires_grad=False,
+        )
 
     def get_draft_kv_cache_layer_names(self) -> list[str]:
         return [layer.self_attn.attn.layer_name for layer in self.model.layers]
