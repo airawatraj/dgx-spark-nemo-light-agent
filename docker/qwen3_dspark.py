@@ -153,10 +153,18 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
         )
 
     def forward(self, *args, **kwargs):
-        kwargs.pop("hidden_states", None)
+        target_hidden_states = kwargs.pop("hidden_states", None)
         out = super().forward(*args, **kwargs)
-        if isinstance(out, tuple) and len(out) > 2:
-            return out[:2]
+        
+        # In vLLM 0.26.0, llm_base_proposer expects (last_hidden_states, hidden_states).
+        # If DFlash returns a single tensor, we must bundle it with the target hidden states.
+        if isinstance(out, torch.Tensor):
+            return target_hidden_states, out
+            
+        if isinstance(out, tuple):
+            if len(out) >= 2:
+                return out[:2]
+                
         return out
 
     def get_draft_kv_cache_layer_names(self) -> list[str]:
