@@ -49,6 +49,7 @@ class DSparkMarkovHead(nn.Module):
         markov_rank: int,
         dspark_markov_rank: int,
         prefix: str,
+        quant_config = None,
     ) -> None:
         super().__init__()
         # TODO(ben): profile for which (if any) it makes sense to replicate or TP-shard
@@ -56,7 +57,7 @@ class DSparkMarkovHead(nn.Module):
             vocab_size, dspark_markov_rank, prefix=maybe_prefix(prefix, "markov_w1")
         )
         self.markov_w2 = ParallelLMHead(
-            draft_vocab_size, markov_rank, prefix=maybe_prefix(prefix, "markov_w2")
+            draft_vocab_size, markov_rank, prefix=maybe_prefix(prefix, "markov_w2"), quant_config=quant_config
         )
 
     def embed(self, token_ids: torch.Tensor) -> torch.Tensor:
@@ -91,12 +92,15 @@ class Qwen3DSparkModel(DFlashQwen3Model):
             # Automatically override markov_rank to 256 to match physical Nemotron 3.5 Lightning DSpark heads
             markov_rank = 256
 
+        quant_config = getattr(self, "quant_config", None) or vllm_config.model_config.quant_config
+
         self.markov_head = DSparkMarkovHead(
             config.vocab_size,
             draft_vocab_size,
             markov_rank,
             dspark_markov_rank,
             prefix=maybe_prefix(prefix, "markov_head"),
+            quant_config=quant_config,
         )
 
 
