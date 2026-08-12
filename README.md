@@ -78,6 +78,12 @@ uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.c
 
 ### Speed Benchmark (custom script)
 
+**August 2026 Results:**
+- **Baseline TPS:** ~36.7 tokens/sec (Peak: 36.8 tok/s)
+- **Time to First Token (TTFT):** ~89 ms (steady state)
+- **Max Throughput (4 sessions):** 81.2 tokens/sec total
+- **Max Working Context:** ~4,095 tokens
+
 ![Speed Benchmark Results](assets/benchmark_speed_august2026.png)
 
 ```bash
@@ -95,6 +101,12 @@ uv run benchmark/benchmark_speed.py --host localhost --port 8000 --model Cogni-B
 > Tests: baseline TPS, TPS vs output length, concurrent sessions (1–4), context window (up to 1M, the server's `--max-model-len`), health & KV stats.
 
 ### Smarts Benchmark (tool-eval-bench)
+
+**August 2026 Results:**
+- **Final Score:** 80 / 100 (**** Good)
+- **Pass Rate:** 11 Passed, 2 Partial, 2 Failed
+- **Responsiveness:** Median turn 3.4s
+- **Efficiency:** 0.5 pts/1K tokens
 
 ![Smarts Benchmark Results 1](assets/benchmark_smarts_august2026_1.png)
 ![Smarts Benchmark Results 2](assets/benchmark_smarts_august2026_2.png)
