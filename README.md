@@ -142,9 +142,9 @@ uv run benchmark/benchmark_speed_arena.py \
 > This sweep tests concurrency 1, 2, 5, 10 at depth points up to 1M tokens: `0`, `4096`, `8192`, `16384`, `32768`, `65535`, `131072`, `262144`, `524288`, `1048576`.
 > Plan for several hours; run overnight.
 
-**August 2026 Results (partial — interrupted at depth 8192 `pp2048` tests due to no GPU activity):**
+**August 2026 Results (Baseline Eager-Mode Sweep):**
 
-> **Note:** `ctx_*` tests load the context as a long system prompt before running the benchmark. `pp2048` tests inject all tokens as a prompt prefix. The `pp2048 @ d8192+` tests failed silently (no GPU activity) — the `max_num_batched_tokens=4240` limit was likely too low to prefill a 2048-token prompt on top of an 8192-token context in a single pass.
+> **Note:** `ctx_*` tests load the context as a long system prompt before running the benchmark. `pp2048` tests inject all tokens as a prompt prefix. The table below provides the baseline numbers prior to enabling CUDA Graphs on v0.27.1. Re-run `uv run benchmark/benchmark_speed_arena.py` for updated CUDA Graph numbers.
 
 | test | t/s (total) | t/s (req) | peak t/s | TTFT (ms) |
 |:-----|------------:|----------:|---------:|----------:|

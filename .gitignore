@@ -10,6 +10,7 @@ ENV/
 .DS_Store
 .idea/
 .vscode/
+*.old.png
 
 # Local model weight caches or logs
 .nim-cache/

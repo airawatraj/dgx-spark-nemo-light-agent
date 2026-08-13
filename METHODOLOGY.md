@@ -3,11 +3,29 @@
 ## Architecture & Deployment Setup
 - **Main Model**: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` (30B NVFP4 quantized hybrid Mamba/Transformer)
 - **Speculative Draft Model**: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark` (DFlash backbone + DSpark Markov head)
-- **Serving Engine**: vLLM `v0.26.0` (`vllm/vllm-openai:latest`) running inside Docker on NVIDIA DGX Spark (`rawatlabs` single-GPU Grace-Blackwell host with 128GB UMA). *(Upgraded to `v0.27.1` — see note at end.)*
+- **Serving Engine**: vLLM `v0.27.1` (`vllm/vllm-openai:v0.27.1`) running inside Docker on NVIDIA DGX Spark (`rawatlabs` single-GPU Grace-Blackwell host with 128GB UMA).
 - **Deployment Strategy**: 
   - Code edits and git commits originate on local MBP workspace.
   - Pushed to GitHub and pulled on DGX Spark host.
-  - `docker/start.sh` previously mounted custom model runner files (e.g. `docker/qwen3_dspark.py`) directly over the container's vLLM package directory. This patch is no longer required from vLLM `v0.27.1` onward.
+  - `docker/start.sh` volume-mounts `docker/qwen3_dspark.py` over the container's vLLM package directory (`/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen3_dspark.py`).
+
+---
+
+## Table of Contents & Quick Navigation Index
+
+- [Issue 1: Config Discrepancy & Tensor Dimension Mismatch in Markov Head](#issue-1-config-discrepancy--tensor-dimension-mismatch-in-markov-head)
+- [Issue 2: Missing Quantization Config in ParallelLMHead](#issue-2-missing-quantization-config-in-parallellmhead)
+- [Issue 3: ModelOpt NVFP4 Weight & Scale Packing Mismatch](#issue-3-modelopt-nvfp4-weight--scale-packing-mismatch)
+- [Issue 4: Missing Proposer Attribute mask_hidden in CausalLM Model Wrapper](#issue-4-missing-proposer-attribute-mask_hidden-in-causallm-model-wrapper)
+- [Issue 5: Unbound Local Variable in Dynamic Head Splitting](#issue-5-unbound-local-variable-in-dynamic-head-splitting)
+- [Issue 6: CUDA Memory Saturation & Grace-Blackwell UMA OOM Panic](#issue-6-cuda-memory-saturation--grace-blackwell-uma-oom-panic)
+- [Issue 7: Stale Triton Kernel Cache Causing CUBLAS_STATUS_INTERNAL_ERROR](#issue-7-stale-triton-kernel-cache-causing-cublas_status_internal_error)
+- [Issue 8: Parameter Name & Signature Mismatch in Draft Model Forward Pass](#issue-8-parameter-name--signature-mismatch-in-draft-model-forward-pass)
+- [Issue 9: Mamba Page Size Alignment Constraint](#issue-9-mamba-page-size-alignment-constraint)
+- [Issue 10: Proposer Keyword Argument Substitution](#issue-10-proposer-keyword-argument-substitution)
+- [Issue 11: Proposer Keyword Argument Filtering in Draft Model Forward Pass](#issue-11-proposer-keyword-argument-filtering-in-draft-model-forward-pass)
+- [Issue 12: Shape Unpacking Mismatch in Dummy Run vs Generation](#issue-12-shape-unpacking-mismatch-in-dummy-run-vs-generation)
+- [Upgrade Note: vLLM v0.26.0 → v0.27.1](#upgrade-note-vllm-v0260--v0271)
 
 ---
 
