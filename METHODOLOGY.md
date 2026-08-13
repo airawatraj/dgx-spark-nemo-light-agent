@@ -120,9 +120,15 @@
 ## Upgrade Note: vLLM v0.26.0 → v0.27.1
 
 - **Tagged** the last known-working `v0.26.0` state as git tag `v0.26.0-working-dspark` before upgrading.
-- **vLLM `v0.27.1`** (`vllm/vllm-openai:v0.27.1`) is expected to have native DSpark support, eliminating the need for the volume-mounted `docker/qwen3_dspark.py` patch that resolved Issues 1–12 above.
-- **`--enforce-eager` removed** — CUDA graph capture is re-enabled on `v0.27.1`, which should improve decode throughput meaningfully (observed ~125 t/s on arena leaderboard from another user running the stock image).
-- **Rollback**: If `v0.27.1` surfaces new issues, revert with:
+- **Engine Upgrade**: Running `vllm/vllm-openai:v0.27.1`.
+- **Volume Mount Preserved**: Stock `v0.27.1` still encounters the `markov_rank: 256` vs `dspark_markov_rank: 512` weight shape mismatch on NVIDIA's `d10c6ff` checkpoint. The volume-mounted `docker/qwen3_dspark.py` patch remains required and operates cleanly on `v0.27.1`.
+- **CUDA Graphs Re-enabled (`--enforce-eager` removed)**: CUDA Graph capture was re-enabled on `v0.27.1` (PIECEWISE mode, capturing up to 512 slots).
+- **Verified Performance Improvements**:
+  - **Single Stream TPS**: Improved from `36.7 tok/s` → `44.2 tok/s` (+20.4%).
+  - **Steady State TTFT**: Reduced from `89 ms` → `69 ms` (-22.5% latency).
+  - **4-Session Concurrency**: Scaled from `81.2 tok/s` → `98.8 tok/s`.
+  - **Context Scaling**: Max verified context reached `~522,986 tokens` with `142.0 tok/s` throughput at 523K depth.
+- **Rollback**: If needed, revert to tagged state via:
   ```bash
   git checkout v0.26.0-working-dspark
   bash docker/start.sh
