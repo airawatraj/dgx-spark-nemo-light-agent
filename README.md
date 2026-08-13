@@ -78,11 +78,12 @@ uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.c
 
 ### Speed Benchmark (custom script)
 
-**August 2026 Results:**
-- **Baseline TPS:** ~36.7 tokens/sec (Peak: 36.8 tok/s)
-- **Time to First Token (TTFT):** ~89 ms (steady state)
-- **Max Throughput (4 sessions):** 81.2 tokens/sec total
-- **Max Working Context:** ~4,095 tokens
+**August 2026 Results (vLLM v0.27.1 + CUDA Graphs):**
+- **Baseline TPS:** ~44.2 tokens/sec (Peak: 45.7 tok/s)
+- **Time to First Token (TTFT):** ~69 ms (steady state)
+- **Max Throughput (4 sessions):** 98.8 tokens/sec total (24.7 tok/s per session)
+- **Deep Context Scaling Throughput:** 142.0 tok/s at ~523K context
+- **Max Working Context:** ~522,986 tokens
 
 ![Speed Benchmark Results](assets/benchmark_speed_august2026.png)
 
