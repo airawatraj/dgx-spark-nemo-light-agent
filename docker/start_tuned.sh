@@ -3,6 +3,8 @@
 # High-throughput vLLM runner for Nemotron 3.5 Lightning NVFP4 + DSpark
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 CONTAINER_NAME="${CONTAINER_NAME:-spark-brain}"
 VLLM_IMAGE="${VLLM_IMAGE:-vllm/vllm-openai:v0.27.1}"
 MODEL_ID="${MODEL_ID:-nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4}"
@@ -10,7 +12,7 @@ SPECULATIVE_MODEL_ID="${SPECULATIVE_MODEL_ID:-nvidia/NVIDIA-Nemotron-3.5-Lightni
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Cogni-Brain}"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
-GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.8}"
+GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.78}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-262144}"
 NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-3}"
 
@@ -52,24 +54,38 @@ docker run -d --name "$CONTAINER_NAME" \
   -v "$HF_HOME:/root/.cache/huggingface" \
   -v "$HOME/.cache/triton:/root/.cache/triton" \
   -v "$HOME/.cache/vllm:/root/.cache/vllm" \
+  -v "$SCRIPT_DIR/qwen3_dspark_tuned.py:/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen3_dspark.py" \
   "${HF_ENV[@]}" \
+  -e TRITON_CACHE_DIR=/root/.cache/triton \
+  -e VLLM_MARLIN_USE_ATOMIC_ADD=1 \
+  -e TORCH_MATMUL_PRECISION=high \
+  -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  -e FLASHINFER_DISABLE_VERSION_CHECK=1 \
+  -e NVIDIA_FORWARD_COMPAT=1 \
+  -e VLLM_HTTP_TIMEOUT_KEEP_ALIVE=600 \
   "$VLLM_IMAGE" \
     --model "$MODEL_ID" \
     --host "$HOST" \
     --port "$PORT" \
     --served-model-name "$SERVED_MODEL_NAME" \
-    --tensor-parallel-size 1 \
+    --trust-remote-code \
     --moe-backend marlin \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
+    --max-num-seqs 8 \
+    --max-num-batched-tokens 32768 \
+    --async-scheduling \
+    --enable-chunked-prefill \
     --enable-prefix-caching \
+    --load-format fastsafetensors \
     --mamba-backend flashinfer \
     --mamba-cache-mode align \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --speculative-config "{\"method\":\"dspark\",\"model\":\"$SPECULATIVE_MODEL_ID\",\"num_speculative_tokens\":$NUM_SPECULATIVE_TOKENS}" \
     --reasoning-parser nemotron_v3 \
     --tool-call-parser qwen3_coder \
-    --enable-auto-tool-choice
+    --enable-auto-tool-choice \
+    --generation-config vllm
 
 echo
 echo "Container started."
