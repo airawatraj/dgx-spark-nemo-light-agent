@@ -115,41 +115,16 @@ class Qwen3DSparkModel(DFlashQwen3Model):
 
 
 class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
-    def __init__(self, *, vllm_config: VllmConfig, prefix: str = "") -> None:
-        nn.Module.__init__(self)
-        self.draft_model_config = vllm_config.speculative_config.draft_model_config
-        self.config = self.draft_model_config.hf_config
-        if getattr(self.config, "draft_vocab_size", None) is None:
-            self.config.draft_vocab_size = getattr(self.config, "vocab_size", None)
-        target_layer_num = vllm_config.model_config.get_num_layers(
-            vllm_config.parallel_config
-        )
-        self.model = Qwen3DSparkModel(
+    def __init__(
+        self,
+        *,
+        vllm_config: VllmConfig,
+        prefix: str = "",
+    ) -> None:
+        super().__init__(
             vllm_config=vllm_config,
-            prefix=maybe_prefix(prefix, "model"),
-            start_layer_id=target_layer_num,
-        )
-
-        logit_scale = getattr(self.config, "logit_scale", 1.0)
-        self.lm_head = ParallelLMHead(
-            self.config.draft_vocab_size,
-            self.config.hidden_size,
-            prefix=maybe_prefix(prefix, "lm_head"),
-        )
-        self.logits_processor = LogitsProcessor(
-            self.config.draft_vocab_size, scale=logit_scale
-        )
-        target_vocab_size = vllm_config.model_config.get_vocab_size()
-        if self.config.draft_vocab_size != target_vocab_size:
-            self.draft_id_to_target_id = nn.Parameter(
-                torch.zeros(self.config.draft_vocab_size, dtype=torch.long),
-                requires_grad=False,
-            )
-        else:
-            self.draft_id_to_target_id = None
-        self.mask_hidden = nn.Parameter(
-            torch.zeros(self.config.hidden_size),
-            requires_grad=False,
+            prefix=prefix,
+            model_class=Qwen3DSparkModel,
         )
 
     def get_draft_kv_cache_layer_names(self) -> list[str]:
