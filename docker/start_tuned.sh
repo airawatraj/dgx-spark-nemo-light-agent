@@ -34,6 +34,11 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
 fi
 
+if sudo -n true 2>/dev/null; then
+  echo "Reclaiming host OS memory caches..."
+  sudo sync && sudo sysctl -w vm.drop_caches=3 >/dev/null 2>&1 || true
+fi
+
 mkdir -p "$HOME/.cache/huggingface" "$HOME/.cache/triton" "$HOME/.cache/vllm"
 
 HF_HOME="${HF_HOME:-$HOME/.cache/huggingface}"
