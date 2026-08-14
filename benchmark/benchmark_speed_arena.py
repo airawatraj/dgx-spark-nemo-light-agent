@@ -1,10 +1,14 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.10"
+# dependencies = [
+#     "httpx",
+# ]
 # ///
 """
 DGX Spark / Nemotron-3.5-Lightning-30B Full Benchmark (spark-arena style)
 Runs the long-form llama-benchy sweep used for spark-arena-style measurements.
+Automatically queries the vLLM server to bound depths safely within max_model_len.
 
 Usage:
   uv run benchmark/benchmark_speed_arena.py
@@ -12,11 +16,13 @@ Usage:
 """
 
 import argparse
+import json
 import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+import httpx
 
 
 COLORS = {
@@ -45,8 +51,55 @@ def result_line(label, value, color="green"):
     print(f"  {c(label.ljust(30), 'dim')} {c(str(value), color)}")
 
 
-def build_command(args):
-    return [
+def probe_server_max_model_len(base_url: str) -> int:
+    """Probe the vLLM server to discover configured max_model_len."""
+    # Strip /v1 if present for root endpoints
+    root_url = base_url.rstrip("/")
+    if root_url.endswith("/v1"):
+        root_url = root_url[:-3]
+
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            # 1. Try /load or /metrics or /v1/models
+            resp = client.get(f"{root_url}/v1/models")
+            if resp.status_code == 200:
+                data = resp.json()
+                for m in data.get("data", []):
+                    if "max_model_len" in m:
+                        return int(m["max_model_len"])
+    except Exception:
+        pass
+
+    return 262144  # Safe default if unreachable
+
+
+def compute_safe_depths(max_model_len: int, tg: int, custom_depths: list[int] | None = None) -> list[str]:
+    """Generate safe depth sweep points that reserve space for tg output tokens."""
+    if custom_depths:
+        raw_depths = custom_depths
+    else:
+        # Standard exponential hierarchy
+        raw_depths = [0, 4096, 8192, 16384, 32768, 65535, 131072, 262144, 524288, 1048576]
+
+    safe_depths = []
+    max_safe_input = max(0, max_model_len - tg - 16)
+
+    for d in raw_depths:
+        if d == 0:
+            safe_depths.append("0")
+        elif d < max_safe_input:
+            safe_depths.append(str(d))
+        elif d >= max_safe_input:
+            # Add clamped ceiling depth if not already close
+            if not safe_depths or int(safe_depths[-1]) < (max_safe_input - 1000):
+                safe_depths.append(str(max_safe_input))
+            break
+
+    return safe_depths
+
+
+def build_command(args, safe_depths: list[str]):
+    cmd = [
         "uv",
         "tool",
         "run",
@@ -62,29 +115,18 @@ def build_command(args):
         "--tokenizer",
         args.tokenizer,
         "--depth",
-        "0",
-        "4096",
-        "8192",
-        "16384",
-        "32768",
-        "65535",
-        "131072",
-        "262144",
-        "524288",
-        "1048576",
+        *safe_depths,
         "--pp",
         str(args.pp),
         "--tg",
         str(args.tg),
         "--enable-prefix-caching",
         "--concurrency",
-        "1",
-        "2",
-        "5",
-        "10",
+        *args.concurrency,
         "--save-result",
         args.save_result,
     ]
+    return cmd
 
 
 def main():
@@ -104,6 +146,9 @@ def main():
     )
     parser.add_argument("--pp", type=int, default=2048)
     parser.add_argument("--tg", type=int, default=128)
+    parser.add_argument("--max-model-len", type=int, default=None, help="Explicit max context ceiling (auto-detected if omitted)")
+    parser.add_argument("--depth", nargs="+", type=int, default=None, help="Explicit depth list to test")
+    parser.add_argument("--concurrency", nargs="+", default=["1", "2", "5", "10"], help="Concurrency levels to sweep")
     parser.add_argument("--save-result", default="results_full.csv")
     args = parser.parse_args()
 
@@ -114,8 +159,16 @@ def main():
     result_line("Served model name", args.served_model_name)
     result_line("Tokenizer", args.tokenizer)
     result_line("Output CSV", args.save_result)
+
+    # Detect or use configured max_model_len
+    detected_len = args.max_model_len or probe_server_max_model_len(args.base_url)
+    safe_depths = compute_safe_depths(detected_len, args.tg, args.depth)
+
+    result_line("Detected Server Context", f"{detected_len:,} tokens")
+    result_line("Safe Sweep Depths", ", ".join(safe_depths))
+    result_line("Concurrency Levels", ", ".join(args.concurrency))
     print()
-    print(f"  {c('This sweep tests depths up to 1M context. Prefer to run it overnight.', 'yellow')}")
+    print(f"  {c('All depth points are bounded within (max_model_len - tg) to guarantee 0 HTTP 400 errors.', 'green')}")
 
     if shutil.which("uv") is None:
         print(f"\n{c('✗ uv is not installed or not on PATH', 'red')}")
@@ -125,7 +178,7 @@ def main():
     if output_path.parent != Path("."):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    command = build_command(args)
+    command = build_command(args, safe_depths)
 
     header("COMMAND")
     print("  " + " \\\n    ".join(command))
