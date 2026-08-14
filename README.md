@@ -27,6 +27,18 @@ Key characteristics:
 - **1M token context window** (`--max-model-len 1048576`)
 - Native `--enable-auto-tool-choice` support
 
+> [!NOTE]
+> **Context Window Disclaimer (1M Model Capacity vs. Operational Latency):**
+> 
+> While Nemotron-3.5-Lightning-30B natively supports a **1M token context window** (`--max-model-len 1048576`), operational context scaling on a single DGX Spark node is bounded by prefill Time-To-First-Token (TTFT) and KV-cache memory dynamics:
+> 
+> - **128K context (`d131072 c1`):** TTFT is **33.36 seconds** — 🟢 *Optimal limit for live interactive agents (Claude Code, Continue, Open WebUI).*
+> - **256K context (`d262144 c1`):** TTFT reaches **87.92 seconds** (~1.5 mins) — 🟡 *Usable for long document queries with relaxed timeouts.*
+> - **512K context (`d524288 c1`):** TTFT reaches **260.12 seconds** (~4.3 mins) — 🔴 *Intended for offline batch processing.*
+> - **1M context (`d1048576 c1`):** Extrapolates to **> 10–15 minutes** for prompt prefill alone. Most standard API clients and HTTP proxies will time out after 60–120s.
+> 
+> *Recommendation:* Keep `--max-model-len` at `131072` or `262144` for interactive agent use cases to maximize KV-cache memory pool throughput and prevent client timeouts.
+
 ---
 
 ## Quick Start
