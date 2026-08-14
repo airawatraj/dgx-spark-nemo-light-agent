@@ -152,10 +152,6 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
             requires_grad=False,
         )
 
-    def forward(self, *args, **kwargs):
-        kwargs.pop("hidden_states", None)
-        return super().forward(*args, **kwargs)
-
     def get_draft_kv_cache_layer_names(self) -> list[str]:
         return [layer.self_attn.attn.layer_name for layer in self.model.layers]
 
@@ -205,10 +201,10 @@ class Qwen3DSparkForCausalLM(DFlashQwen3ForCausalLM):
 
         # mask_embedding is an unused placeholder param; DSpark masks via the vocab row.
         # confidence_head is not wired into inference yet; skip its weights.
-        # markov_head ModelOpt NVFP4 quantized weights skip to avoid tensor packing crashes.
+        # markov_head scale factors are skipped to avoid dimension mismatches on unquantized heads.
         # embed_tokens / lm_head are optional; when omitted they are shared from
         # the target by load_dspark_model, so skip the unloaded params here.
-        skip_substrs = ["mask_embedding", "confidence_head", "markov_head"]
+        skip_substrs = ["mask_embedding", "confidence_head", "markov_head.markov_w2.weight_scale", "markov_head.markov_w2.input_scale"]
         if not includes_embed_tokens:
             skip_substrs.append("embed_tokens")
         if not includes_lm_head:
