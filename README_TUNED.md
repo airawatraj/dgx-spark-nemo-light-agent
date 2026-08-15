@@ -43,10 +43,28 @@ curl -sf http://localhost:8000/health && echo OK
 
 ## Benchmarks (256K Tuned Route)
 
-### 1. Smarts Benchmark (`tool-eval-bench`)
+### 1. Speed Benchmark (custom script)
 
 ```bash
+# Full run (TPS, TTFT, concurrent sessions, 256K context limits)
+uv run benchmark/benchmark_speed.py
+
+# Quick check (skip context sweep)
+uv run benchmark/benchmark_speed.py --skip-context
+```
+
+![Speed Benchmark Tuned Results](assets/benchmark_speed_tuned_august2026.png)
+
+---
+
+### 2. Smarts Benchmark (`tool-eval-bench`)
+
+```bash
+# Quick smoke test
 uv run benchmark/benchmark_smarts.py
+
+# Full throughput sweep
+uv run benchmark/benchmark_smarts.py --mode perf
 ```
 
 - **Final Score:** **87 / 100** (★★★★ Good)
@@ -54,7 +72,12 @@ uv run benchmark/benchmark_smarts.py
 - **Median Turn Latency:** **1.1s** (down from 3.4s)
 - **Tool Selection & Multi-Step Chains:** 100% (6/6)
 
-### 2. Multi-Context Sweep (`llama-benchy`)
+![Smarts Benchmark Tuned Results 1](assets/benchmark_smarts_tuned_august2026_1.png)
+![Smarts Benchmark Tuned Results 2](assets/benchmark_smarts_tuned_august2026_2.png)
+
+---
+
+### 3. Multi-Context Sweep (`llama-benchy`)
 
 ```bash
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.csv
@@ -70,6 +93,8 @@ uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.c
 | `ctx_tg @ d4096 (c10)` | 144.85 | 390.00 | — |
 | `ctx_tg @ d32768 (c1)` | 115.56 | 130.45 | — |
 | `ctx_tg @ d259000 (c1)` | 76.11 | 125.41 | — |
+
+![Spark Arena Tuned Benchmark](assets/spark_arena_nemotron-3.5-lightning-30b-tuned.png)
 
 ---
 
