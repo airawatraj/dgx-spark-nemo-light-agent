@@ -82,7 +82,8 @@ def compute_safe_depths(max_model_len: int, tg: int, custom_depths: list[int] | 
         raw_depths = [0, 4096, 8192, 16384, 32768, 65535, 131072, 262144, 524288, 1048576]
 
     safe_depths = []
-    max_safe_input = max(0, max_model_len - tg - 16)
+    # Reserve at least tg + 2048 tokens for prompt template, system tokens, and generated tokens
+    max_safe_input = max(0, max_model_len - tg - 2048)
 
     for d in raw_depths:
         if d == 0:
@@ -90,9 +91,10 @@ def compute_safe_depths(max_model_len: int, tg: int, custom_depths: list[int] | 
         elif d < max_safe_input:
             safe_depths.append(str(d))
         elif d >= max_safe_input:
-            # Add clamped ceiling depth if not already close
-            if not safe_depths or int(safe_depths[-1]) < (max_safe_input - 1000):
-                safe_depths.append(str(max_safe_input))
+            # Round down to nearest 1000 for clean reporting
+            clamped = (max_safe_input // 1000) * 1000
+            if not safe_depths or int(safe_depths[-1]) < (clamped - 1000):
+                safe_depths.append(str(clamped))
             break
 
     return safe_depths
