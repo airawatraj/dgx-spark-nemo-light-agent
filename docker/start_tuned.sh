@@ -12,7 +12,7 @@ SPECULATIVE_MODEL_ID="${SPECULATIVE_MODEL_ID:-nvidia/NVIDIA-Nemotron-3.5-Lightni
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Cogni-Brain}"
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
-GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.78}"
+GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.80}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-262144}"
 NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-3}"
 
@@ -64,7 +64,8 @@ docker run -d --name "$CONTAINER_NAME" \
   -e TRITON_CACHE_DIR=/root/.cache/triton \
   -e VLLM_MARLIN_USE_ATOMIC_ADD=1 \
   -e TORCH_MATMUL_PRECISION=high \
-  -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  -e CUDA_DEVICE_MAX_CONNECTIONS=1 \
+  -e VLLM_ATTENTION_BACKEND=FLASHINFER \
   -e FLASHINFER_DISABLE_VERSION_CHECK=1 \
   -e NVIDIA_FORWARD_COMPAT=1 \
   -e VLLM_HTTP_TIMEOUT_KEEP_ALIVE=600 \
@@ -77,10 +78,7 @@ docker run -d --name "$CONTAINER_NAME" \
     --moe-backend marlin \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
-    --max-num-seqs 8 \
-    --max-num-batched-tokens 32768 \
-    --async-scheduling \
-    --enable-chunked-prefill \
+    --max-num-batched-tokens 8192 \
     --enable-prefix-caching \
     --load-format fastsafetensors \
     --mamba-backend flashinfer \
