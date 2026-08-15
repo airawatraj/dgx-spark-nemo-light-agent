@@ -89,11 +89,9 @@ class Qwen3DSparkModel(DFlashQwen3Model):
             getattr(config, "draft_vocab_size", None) or config.vocab_size
         )
         markov_rank = getattr(config, "markov_rank", 256)
-        dspark_markov_rank = getattr(config, "dspark_markov_rank", 256)
-        if markov_rank > 256:
+        dspark_markov_rank = getattr(config, "dspark_markov_rank", 512)
+        if markov_rank == 512 and dspark_markov_rank == 512:
             markov_rank = 256
-        if dspark_markov_rank > 256:
-            dspark_markov_rank = 256
 
         quant_config = getattr(self, "quant_config", None) or vllm_config.model_config.quant_config
 
