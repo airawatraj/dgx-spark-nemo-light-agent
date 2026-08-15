@@ -67,12 +67,14 @@ uv run benchmark/benchmark_smarts.py
 uv run benchmark/benchmark_smarts.py --mode trials --seed 42 --trials 3
 ```
 
-- **Quality Score:** **87 / 100** (★★★★ Good)
+- **Quality Score:** **87 / 100** (★★★★ Good, peak run)
 - **Deployability Score:** **86 / 100**
 - **Pass Rate:** 12 Passed, 2 Partial, 1 Failed
 - **Median Turn Latency:** **1.1s** (down from 3.4s)
 - **Tool Selection & Multi-Step Chains:** 100% (6/6)
 - **Error Recovery & Refusal:** 83% (5/6)
+
+> *Note on Variance:* Due to sampling temperature and LLM non-determinism across multi-step tool calls, scores across individual runs typically range between **80–87 / 100** (87/100 shown is the peak single run). For stable statistical measurements, use `--mode trials --seed 42 --trials 3`.
 
 ![Smarts Benchmark Tuned Results 1](assets/benchmark_smarts_tuned_august2026_1.png)
 ![Smarts Benchmark Tuned Results 2](assets/benchmark_smarts_tuned_august2026_2.png)
