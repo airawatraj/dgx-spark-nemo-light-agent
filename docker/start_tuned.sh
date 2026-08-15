@@ -14,7 +14,7 @@ HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.80}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-262144}"
-NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-4}"
+NUM_SPECULATIVE_TOKENS="${NUM_SPECULATIVE_TOKENS:-3}"
 
 echo "=== Starting Tuned vLLM Server ==="
 echo "  Main Model:               $MODEL_ID"
@@ -78,7 +78,9 @@ docker run -d --name "$CONTAINER_NAME" \
     --moe-backend marlin \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
-    --max-num-batched-tokens 16384 \
+    --max-num-batched-tokens 32768 \
+    --async-scheduling \
+    --enable-chunked-prefill \
     --enable-prefix-caching \
     --load-format fastsafetensors \
     --mamba-backend flashinfer \
