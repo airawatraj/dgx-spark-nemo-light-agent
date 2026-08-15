@@ -59,11 +59,7 @@ bash setup/download_model.sh
 bash setup/preflight.sh
 
 # 5. Start vLLM container with NVFP4 + DSpark
-# Option A: Standard 1M context configuration
 bash docker/start.sh
-
-# Option B: High-speed 256K interactive agent route (recommended for coding agents)
-bash docker/start_tuned.sh
 
 # 6. Check container status & logs
 bash docker/status.sh
@@ -71,27 +67,18 @@ bash docker/status.sh
 
 ---
 
-### Operational Modes
-
-| Route | Script | Context Window | Optimizations | Recommended Use Case |
-| :--- | :--- | :--- | :--- | :--- |
-| **Standard Mode** | `docker/start.sh` | **1,048,576 tokens (1M)** | Conservative batching, wide sequence allocations | Long document analysis & 1M context research |
-| **Interactive Agent Mode** | `docker/start_tuned.sh` | **262,144 tokens (256K)** | Async token scheduling, hardware TF32 acceleration, tight CUDA graph sizes | Interactive coding agents (Claude Code, Continue, Open WebUI) |
-
----
-
-### Run Performance Benchmarks
+### 5. Run Performance Benchmarks
 
 Run the benchmark scripts to test baseline latency, tool-calling smarts, and spark-arena-style llama-benchy sweeps:
 
 ```bash
-# 1. Custom Speed Benchmark (TPS, TTFT, concurrency, context limits)
+# 1. Custom Speed Benchmark (TPS, TTFT, concurrency, 1M context limits)
 uv run benchmark/benchmark_speed.py
 
 # 2. Smarts Benchmark (tool-eval-bench)
 uv run benchmark/benchmark_smarts.py
 
-# 3. Full spark-arena-style sweep (llama-benchy)
+# 3. Full spark-arena-style overnight sweep (llama-benchy)
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.csv
 ```
 
@@ -128,10 +115,10 @@ uv run benchmark/benchmark_speed.py --host localhost --port 8000 --model Cogni-B
 
 ### Smarts Benchmark (tool-eval-bench)
 
-**August 2026 Results (Interactive Route):**
-- **Final Score:** **87 / 100** (★★★★ Good)
-- **Pass Rate:** 12 Passed, 2 Partial, 1 Failed
-- **Responsiveness:** Median turn **1.1s**
+**August 2026 Results:**
+- **Final Score:** 80 / 100 (**** Good)
+- **Pass Rate:** 11 Passed, 2 Partial, 2 Failed
+- **Responsiveness:** Median turn 3.4s
 - **Efficiency:** 0.5 pts/1K tokens
 
 ![Smarts Benchmark Results 1](assets/benchmark_smarts_august2026_1.png)
@@ -153,7 +140,7 @@ uv run benchmark/benchmark_smarts.py --mode trials --seed 42 --trials 3
 ### spark-arena Benchmark (overnight, llama-benchy)
 
 ```bash
-# Standard spark-arena sweep (automatically bounds test points to server max_model_len)
+# Standard spark-arena sweep (tests context depths up to 1M)
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.csv
 
 # Custom endpoint
@@ -164,6 +151,9 @@ uv run benchmark/benchmark_speed_arena.py \
   --save-result benchmark/results_full.csv
 ```
 
+> This sweep tests concurrency 1, 2, 5, 10 at depth points up to 1M tokens: `0`, `4096`, `8192`, `16384`, `32768`, `65535`, `131072`, `262144`, `524288`, `1048576`.
+> Plan for several hours; run overnight.
+
 <p align="center">
   <a href="https://spark-arena.com/benchmark/a0c9f1c4-60f6-4bf2-a2b7-815817146da3">
     <img src="./assets/spark_arena_nemotron-3.5-lightning-30b.png" width="700" alt="Spark Arena community benchmark — Nemotron-3.5-Lightning-30B-A3B-NVFP4 on single DGX Spark">
@@ -173,31 +163,40 @@ uv run benchmark/benchmark_speed_arena.py \
   <a href="https://spark-arena.com/benchmark/a0c9f1c4-60f6-4bf2-a2b7-815817146da3">Spark Arena community benchmark — Nemotron-3.5-Lightning-30B-A3B-NVFP4 on single DGX Spark</a>
 </p>
 
-**Interactive Route Results (256K Context + DSpark Acceleration):**
+**August 2026 Results (vLLM v0.27.1 + CUDA Graphs Sweep):**
+
+> **Note:** `ctx_*` tests load the context as a long system prompt before running the benchmark. `pp2048` tests inject all tokens as a prompt prefix. Full sweep results across context depths up to 512K (`d524288`) are published at [spark-arena.com/benchmark/a0c9f1c4-60f6-4bf2-a2b7-815817146da3](https://spark-arena.com/benchmark/a0c9f1c4-60f6-4bf2-a2b7-815817146da3). The table below summarizes key representative test points with CUDA Graphs enabled.
 
 | test | t/s (total) | t/s (req) | peak t/s | TTFT (ms) |
 |:-----|------------:|----------:|---------:|----------:|
-| pp2048 (c1) | 6244.38 | 6244.38 | — | 330.59 |
-| tg128 (c1) | 115.26 | 115.26 | 118.67 | — |
-| pp2048 (c2) | 6576.88 | 4462.48 | — | 494.56 |
-| tg128 (c2) | 130.85 | 76.59 | 165.33 | — |
-| pp2048 (c5) | 7601.71 | 2315.77 | — | 1152.38 |
-| tg128 (c5) | 180.48 | 49.84 | 285.33 | — |
-| pp2048 (c10) | 7822.13 | 1372.97 | — | 2048.47 |
-| tg128 (c10) | 221.00 | 34.12 | 440.33 | — |
-| ctx_pp @ d4096 (c10) | 7941.10 | 1795.86 | — | 3361.90 |
-| ctx_tg @ d4096 (c10) | 144.85 | 26.63 | 390.00 | — |
-| ctx_pp @ d8192 (c1) | 7611.59 | 7611.59 | — | 1078.66 |
-| ctx_tg @ d8192 (c1) | 104.23 | 104.23 | 106.82 | — |
-| ctx_tg @ d32768 (c1) | 115.56 | 115.56 | 130.45 | — |
-| ctx_tg @ d65535 (c1) | 97.75 | 97.75 | 103.72 | — |
-| ctx_tg @ d131072 (c1) | 96.64 | 96.64 | 107.00 | — |
-| ctx_tg @ d259000 (c1) | 76.11 | 76.11 | 125.41 | — |
+| pp2048 (c1) | 5756.67 | 5756.67 | — | 358.91 |
+| tg128 (c1) | 41.76 | 41.76 | 44.00 | — |
+| pp2048 (c2) | 6039.83 | 4218.51 | — | 529.53 |
+| tg128 (c2) | 59.52 | 30.97 | 67.33 | — |
+| pp2048 (c5) | 6313.96 | 2307.50 | — | 1188.40 |
+| tg128 (c5) | 86.56 | 19.78 | 114.67 | — |
+| pp2048 (c10) | 6554.46 | 1512.12 | — | 1987.49 |
+| tg128 (c10) | 113.69 | 13.88 | 177.67 | — |
+| ctx_pp @ d4096 (c1) | 5917.47 | 5917.47 | — | 694.60 |
+| ctx_tg @ d4096 (c1) | 41.83 | 41.83 | 43.67 | — |
+| ctx_pp @ d4096 (c2) | 6237.80 | 3281.18 | — | 1254.08 |
+| ctx_tg @ d4096 (c2) | 56.22 | 32.15 | 64.33 | — |
+| ctx_pp @ d4096 (c5) | 6442.31 | 2058.03 | — | 2263.14 |
+| ctx_tg @ d4096 (c5) | 75.05 | 18.86 | 110.67 | — |
+| ctx_pp @ d4096 (c10) | 6418.42 | 1421.23 | — | 3751.53 |
+| ctx_tg @ d4096 (c10) | 89.42 | 12.06 | 167.00 | — |
+| ctx_pp @ d8192 (c1) | 5853.64 | 5853.64 | — | 1401.86 |
+| ctx_tg @ d8192 (c1) | 42.36 | 42.36 | 44.00 | — |
+| ctx_pp @ d8192 (c2) | 6149.91 | 3579.21 | — | 2337.14 |
+| ctx_tg @ d8192 (c2) | 50.22 | 29.89 | 65.00 | — |
+| ctx_pp @ d8192 (c5) | 6354.00 | 2061.62 | — | 4540.85 |
+| ctx_tg @ d8192 (c5) | 60.17 | 16.80 | 109.33 | — |
 
-**Key observations:**
-- **Prefill throughput:** Reaches up to ~7,941 t/s at concurrency 10.
-- **Concurrent generation:** Scales to 221.00 t/s (peak 440.33 t/s) under 10 concurrent sessions.
-- **Context resilience:** Sustains 76.11–125.41 t/s out to 259,000 context tokens.
+**Key highlights:**
+- **Prefill throughput:** ~5,750–6,550 t/s total at concurrency levels 1–10 (strong prefill parallelism)
+- **Peak generation (c10):** 177.67 t/s total — scales well under load
+- **Single session generation:** ~41–44 t/s peak (consistent with DSpark speculative decoding budget)
+- **Deep context scaling:** Full sweep evaluated up to 512K context (`d524288`); published to [spark-arena.com/benchmark/a0c9f1c4-60f6-4bf2-a2b7-815817146da3](https://spark-arena.com/benchmark/a0c9f1c4-60f6-4bf2-a2b7-815817146da3) · `spark_arena_nemotron-3.5-lightning-30b.png` in `assets/`.
 
 
 
