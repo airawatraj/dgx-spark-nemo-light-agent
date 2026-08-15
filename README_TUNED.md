@@ -4,7 +4,7 @@
 ![Speculative](https://img.shields.io/badge/speculative-DSpark--NVFP4%20(3%20tokens)-purple)
 ![Runtime](https://img.shields.io/badge/runtime-vLLM%20%2F%20vllm--openai-orange)
 ![Context](https://img.shields.io/badge/context-256K-blue)
-![Smarts Score](https://img.shields.io/badge/smarts%20score-83%2F100-brightgreen)
+![Smarts Score](https://img.shields.io/badge/smarts%20score-87%2F100-brightgreen)
 
 This document covers the **Tuned Interactive Route** for serving [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) with DSpark speculative decoding on a single DGX Spark.
 
@@ -60,20 +60,19 @@ uv run benchmark/benchmark_speed.py --skip-context
 ### 2. Smarts Benchmark (`tool-eval-bench`)
 
 ```bash
-# Deterministic full evaluation (69 scenarios, 3 trials)
-uv run benchmark/benchmark_smarts.py --mode trials --seed 42 --trials 3
-
-# Quick smoke test (15 scenarios)
+# Quick smoke test
 uv run benchmark/benchmark_smarts.py
+
+# Full deterministic multi-trial evaluation
+uv run benchmark/benchmark_smarts.py --mode trials --seed 42 --trials 3
 ```
 
-**Full 69-Scenario Suite Results:**
-- **Quality Score:** **83 / 100** (★★★★ Good) — 115 / 138 points (53 Passed, 9 Partial, 7 Failed)
-- **Deployability Score:** **80 / 100**
-- **Median Turn Latency:** **1.5s** (down from 3.4s)
-- **Tool Selection, Multi-Step Chains, Autonomous Planning & Code Patterns:** **100%**
-- **Context & State Tracking:** **90%** (18/20)
-- **Toolset Scale (52 crowded tools):** **88%** (7/8)
+- **Quality Score:** **87 / 100** (★★★★ Good)
+- **Deployability Score:** **86 / 100**
+- **Pass Rate:** 12 Passed, 2 Partial, 1 Failed
+- **Median Turn Latency:** **1.1s** (down from 3.4s)
+- **Tool Selection & Multi-Step Chains:** 100% (6/6)
+- **Error Recovery & Refusal:** 83% (5/6)
 
 ![Smarts Benchmark Tuned Results 1](assets/benchmark_smarts_tuned_august2026_1.png)
 ![Smarts Benchmark Tuned Results 2](assets/benchmark_smarts_tuned_august2026_2.png)
