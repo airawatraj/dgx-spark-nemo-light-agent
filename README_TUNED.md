@@ -79,8 +79,30 @@ uv run benchmark/benchmark_smarts.py --mode perf
 
 ### 3. Multi-Context Sweep (`llama-benchy`)
 
+#### Option A: Full Multi-Context Sweep (Automatic)
+Runs the full depth sweep from 0 to 259,000 tokens across concurrencies 1, 2, 5, 10 and saves the result table:
+
 ```bash
 uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.csv
+```
+
+#### Option B: Quick Single-Point Test (Direct `llama-benchy`)
+To test a specific context depth and concurrency directly:
+
+```bash
+# Test single-stream decode speed (depth 0, 128 output tokens)
+uv tool run --from llama-benchy llama-benchy \
+  --base-url http://localhost:8000/v1 \
+  --model nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4 \
+  --served-model-name Cogni-Brain \
+  --depth 0 --pp 0 --tg 128 --concurrency 1
+
+# Test 16K context with prompt prefill (depth 16384, pp 2048)
+uv tool run --from llama-benchy llama-benchy \
+  --base-url http://localhost:8000/v1 \
+  --model nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4 \
+  --served-model-name Cogni-Brain \
+  --depth 16384 --pp 2048 --tg 128 --concurrency 1
 ```
 
 | Test Point | Throughput (t/s) | Peak t/s | TTFT (ms) |
