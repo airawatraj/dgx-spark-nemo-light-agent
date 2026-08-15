@@ -1,0 +1,80 @@
+# Running Cogni-Brain (Tuned Interactive Route) · 256K Context + DSpark
+
+![Base Model](https://img.shields.io/badge/base%20model-Nemotron--3.5--Lightning--30B--A3B--NVFP4-cyan)
+![Speculative](https://img.shields.io/badge/speculative-DSpark--NVFP4%20(3%20tokens)-purple)
+![Runtime](https://img.shields.io/badge/runtime-vLLM%20%2F%20vllm--openai-orange)
+![Context](https://img.shields.io/badge/context-256K-blue)
+![Smarts Score](https://img.shields.io/badge/smarts%20score-87%2F100-brightgreen)
+
+This document covers the **Tuned Interactive Route** for serving [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) with DSpark speculative decoding on a single DGX Spark.
+
+While the baseline configuration ([`README.md`](./README.md)) supports up to **1M context**, this configuration adjusts the maximum context window to **256K (`--max-model-len 262144`)** to optimize kernel scheduling, single-stream latency, and multi-session throughput for interactive coding assistants (Claude Code, Continue, Open WebUI).
+
+---
+
+## What Changed in the Tuned Route?
+
+1. **Optimized Context Allocation (`262,144` tokens):**
+   - Eliminates long prefill stalls for interactive agent turns.
+   - Slices CUDA graph capture spaces down to a tight `[1, 2, 4, 8, 16]` batch size range for minimal launch dispatch latency.
+2. **Asynchronous Scheduling & Chunked Prefill:**
+   - `--async-scheduling` + `--enable-chunked-prefill` overlaps CPU token dispatch and GPU generation.
+3. **Hardware Acceleration:**
+   - Enabled `TORCH_ALLOW_TF32_CUBLAS_OVERRIDE=1` and `NVIDIA_TF32_OVERRIDE=1` for float32 operations on Tensor Cores.
+4. **DSpark Markov Embedding Packing:**
+   - Bit-packs `markov_w2` into 4-bit representation to eliminate dimension mismatches during dynamic weight loading.
+
+---
+
+## Quick Start
+
+```bash
+# 1. Start the tuned container
+bash docker/start_tuned.sh
+
+# 2. Check logs
+docker logs -f spark-brain
+
+# 3. Verify health
+curl -sf http://localhost:8000/health && echo OK
+```
+
+---
+
+## Benchmarks (256K Tuned Route)
+
+### 1. Smarts Benchmark (`tool-eval-bench`)
+
+```bash
+uv run benchmark/benchmark_smarts.py
+```
+
+- **Final Score:** **87 / 100** (★★★★ Good)
+- **Pass Rate:** 12 Passed, 2 Partial, 1 Failed
+- **Median Turn Latency:** **1.1s** (down from 3.4s)
+- **Tool Selection & Multi-Step Chains:** 100% (6/6)
+
+### 2. Multi-Context Sweep (`llama-benchy`)
+
+```bash
+uv run benchmark/benchmark_speed_arena.py --save-result benchmark/results_full.csv
+```
+
+| Test Point | Throughput (t/s) | Peak t/s | TTFT (ms) |
+|:---|---:|---:|---:|
+| `pp2048 (c1)` | 6,244.38 | — | 330.59 |
+| `tg128 (c1)` | 115.26 | 118.67 | — |
+| `pp2048 (c10)` | 7,822.13 | — | 2,048.47 |
+| `tg128 (c10)` | 221.00 | 440.33 | — |
+| `ctx_pp @ d4096 (c10)` | 7,941.10 | — | 3,361.90 |
+| `ctx_tg @ d4096 (c10)` | 144.85 | 390.00 | — |
+| `ctx_tg @ d32768 (c1)` | 115.56 | 130.45 | — |
+| `ctx_tg @ d259000 (c1)` | 76.11 | 125.41 | — |
+
+---
+
+## Stop Server
+
+```bash
+bash docker/stop.sh
+```

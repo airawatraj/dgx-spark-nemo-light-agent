@@ -65,6 +65,8 @@ bash docker/start.sh
 bash docker/status.sh
 ```
 
+> 💡 *For the 256K interactive coding agent configuration (`docker/start_tuned.sh`), see [README_TUNED.md](./README_TUNED.md).*
+
 ---
 
 ### 5. Run Performance Benchmarks
