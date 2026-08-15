@@ -13,6 +13,8 @@
 This repo documents my inference tuning experiments of [nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4) with DSpark speculative decoding on a single DGX Spark.
 
 > ⚠️ **Personal workstation setup. Not for enterprise use. Use at your own risk.**
+>
+> ⚡ **Looking for higher throughput with interactive agents?** Check out [**README_TUNED.md**](./README_TUNED.md) for the 256K low-latency route.
 
 ---
 
