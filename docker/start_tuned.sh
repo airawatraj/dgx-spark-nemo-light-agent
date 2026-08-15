@@ -78,7 +78,8 @@ docker run -d --name "$CONTAINER_NAME" \
     --moe-backend marlin \
     --kv-cache-dtype fp8 \
     --max-model-len "$MAX_MODEL_LEN" \
-    --max-num-batched-tokens 32768 \
+    --max-num-seqs 16 \
+    --max-num-batched-tokens 16384 \
     --async-scheduling \
     --enable-chunked-prefill \
     --enable-prefix-caching \
