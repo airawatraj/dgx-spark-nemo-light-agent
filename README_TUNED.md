@@ -60,15 +60,17 @@ uv run benchmark/benchmark_speed.py --skip-context
 ### 2. Smarts Benchmark (`tool-eval-bench`)
 
 ```bash
-# Quick smoke test
+# Quick smoke test (1 trial per scenario)
 uv run benchmark/benchmark_smarts.py
+
+# Deterministic multi-trial evaluation (recommended for stable scoring)
+uv run benchmark/benchmark_smarts.py --mode trials --seed 42 --trials 3
 
 # Full throughput sweep
 uv run benchmark/benchmark_smarts.py --mode perf
 ```
 
-- **Final Score:** **87 / 100** (★★★★ Good)
-- **Pass Rate:** 12 Passed, 2 Partial, 1 Failed
+- **Quality Score:** **87 / 100** (★★★★ Good)
 - **Median Turn Latency:** **1.1s** (down from 3.4s)
 - **Tool Selection & Multi-Step Chains:** 100% (6/6)
 
