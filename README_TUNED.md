@@ -81,7 +81,7 @@ uv run benchmark/benchmark_smarts.py --mode trials --seed 42 --trials 3
 
 ---
 
-### 3. Multi-Context Sweep (`llama-benchy`)
+### 3. spark-arena Benchmark (overnight, llama-benchy)
 
 #### Option A: Full Multi-Context Sweep (Automatic)
 Runs the full depth sweep from 0 to 259,000 tokens across concurrencies 1, 2, 5, 10 and saves the result table:
@@ -109,6 +109,19 @@ uv tool run --from llama-benchy llama-benchy \
   --depth 16384 --pp 2048 --tg 128 --concurrency 1
 ```
 
+<p align="center">
+  <a href="https://spark-arena.com/benchmark/55f3efe3-d865-46ee-a670-4ee485238a76">
+    <img src="./assets/spark_arena_nemotron-3.5-lightning-30b-tuned.png" width="700" alt="Spark Arena community benchmark — Nemotron-3.5-Lightning-30B-A3B-NVFP4 (Tuned 256K Route) on single DGX Spark">
+  </a>
+</p>
+<p align="center">
+  <a href="https://spark-arena.com/benchmark/55f3efe3-d865-46ee-a670-4ee485238a76">Spark Arena community benchmark — Nemotron-3.5-Lightning-30B-A3B-NVFP4 (Tuned 256K Route) on single DGX Spark</a>
+</p>
+
+**August 2026 Results (vLLM v0.27.1 + CUDA Graphs Tuned Sweep):**
+
+> **Note:** `ctx_*` tests load the context as a long system prompt before running the benchmark. `pp2048` tests inject all tokens as a prompt prefix. Full sweep results across context depths up to 256K (`d259000`) are published at [spark-arena.com/benchmark/55f3efe3-d865-46ee-a670-4ee485238a76](https://spark-arena.com/benchmark/55f3efe3-d865-46ee-a670-4ee485238a76). The table below summarizes key representative test points with CUDA Graphs enabled.
+
 | Test Point | Context Depth | Throughput (t/s) | Peak t/s | TTFT (ms) |
 |:---|:---|---:|---:|---:|
 | `pp2048 (c1)` | Depth 0 | 6,244.38 | — | 330.59 |
@@ -131,7 +144,11 @@ uv tool run --from llama-benchy llama-benchy \
 | `ctx_tg @ d259000 (c1)` | 259,000 tokens (259K) | 76.11 | 125.41 | — |
 | `tg128 @ d259000 (c10)` | 259,000 tokens (259K) | 35.49 | 232.00 | — |
 
-![Spark Arena Tuned Benchmark](assets/spark_arena_nemotron-3.5-lightning-30b-tuned.png)
+**Key highlights:**
+- **Prefill throughput:** Up to ~7,822 t/s under concurrency 10
+- **Peak generation (c10):** Up to 440.33 t/s peak decode throughput under batch load
+- **Single session generation:** Consistent ~115–119 t/s decode at interactive contexts (< 32K)
+- **Deep context scaling:** Full sweep evaluated up to 256K context (`d259000`); published to [spark-arena.com/benchmark/55f3efe3-d865-46ee-a670-4ee485238a76](https://spark-arena.com/benchmark/55f3efe3-d865-46ee-a670-4ee485238a76) · `spark_arena_nemotron-3.5-lightning-30b-tuned.png` in `assets/`.
 
 ---
 
